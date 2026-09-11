@@ -60,14 +60,17 @@ class MacOSLiveAnalyzer:
         return rows
 
     def list_processes(self) -> list[dict[str, Any]]:
-        result = subprocess.run(
-            ["ps", "-axo", "pid=,ppid=,comm=,command="],
-            capture_output=True, text=True, check=True,
-        )
-        return [
-            {"pid": pid, "ppid": ppid, "process_name": name, "path": command}
-            for pid, ppid, name, command in self._parse_ps(result.stdout)
-        ]
+        try:
+            result = subprocess.run(
+                ["ps", "-axo", "pid=,ppid=,comm=,command="],
+                capture_output=True, text=True, check=True, timeout=10
+            )
+            return [
+                {"pid": pid, "ppid": ppid, "process_name": name, "path": command}
+                for pid, ppid, name, command in self._parse_ps(result.stdout)
+            ]
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+            return []
 
     @staticmethod
     def _permission_flags(header: str) -> str:
@@ -85,10 +88,13 @@ class MacOSLiveAnalyzer:
         return int(value * multipliers[unit])
 
     def inspect_process(self, pid: int, process_name: str) -> list[MacOSMemoryFinding]:
-        result = subprocess.run(
-            ["vmmap", str(pid)], capture_output=True, text=True
-        )
-        if result.returncode != 0:
+        try:
+            result = subprocess.run(
+                ["vmmap", str(pid)], capture_output=True, text=True, timeout=10
+            )
+            if result.returncode != 0:
+                return []
+        except subprocess.TimeoutExpired:
             return []
 
         findings: list[MacOSMemoryFinding] = []

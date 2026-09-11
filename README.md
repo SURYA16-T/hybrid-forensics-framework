@@ -9,7 +9,8 @@ A local, modular digital-forensics framework that combines evidence intake, disk
 - Native live process + virtual-memory inspection through Win32 APIs (`ctypes`).
 - Suspicious memory-region heuristics.
 - Optional process MiniDump acquisition through `dbghelp.dll`.
-- WinPMEM may be used separately for physical-memory acquisition; the resulting image can be analyzed via Volatility 3.
+- WinPMEM may be used separately for physical-memory acquisition; the resulting memory image can then be
+  analyzed with Volatility 3.
 
 ### macOS
 
@@ -65,6 +66,7 @@ pytest -q
 Run the live platform scanner:
 
 ```bash
+chmod +x run_macos.sh
 ./run_macos.sh       # macOS
 python -m src.main --scan-live   # Linux or macOS
 ```

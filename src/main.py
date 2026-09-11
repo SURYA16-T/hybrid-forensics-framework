@@ -49,7 +49,13 @@ def live_scan() -> None:
         analyzer = LinuxLiveAnalyzer()
         findings = analyzer.scan()
     else:
-        print(f"Unsupported operating system: {system}")
+        print(json.dumps({
+            "platform": system,
+            "mode": "live_virtual_memory_triage",
+            "findings": [],
+            "count": 0,
+            "error": f"Unsupported operating system: {system}"
+        }, indent=2))
         return
 
     payload = [item.to_dict() for item in findings]

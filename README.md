@@ -1,5 +1,7 @@
 # Hybrid Memory & Disk Forensics Framework
 
+**Repository:** [SURYA16-T/hybrid-forensics-framework](https://github.com/SURYA16-T/hybrid-forensics-framework)
+
 A local, modular digital-forensics framework that combines evidence intake, disk artifact inspection, offline memory analysis through Volatility 3, platform-specific live process/virtual-memory heuristics, timeline correlation, rule-based threat scoring, and offline JSON/HTML reporting.
 
 ## Platforms

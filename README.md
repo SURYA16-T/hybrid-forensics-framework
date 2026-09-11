@@ -9,7 +9,7 @@ A local, modular digital-forensics framework that combines evidence intake, disk
 - Native live process + virtual-memory inspection through Win32 APIs (`ctypes`).
 - Suspicious memory-region heuristics.
 - Optional process MiniDump acquisition through `dbghelp.dll`.
-- Optional WinPMEM workflow can be integrated externally for physical-memory acquisition.
+- WinPMEM may be used separately for physical-memory acquisition; the resulting image can be analyzed via Volatility 3.
 
 ### macOS
 

@@ -1,0 +1,4 @@
+rich>=13.0
+questionary>=2.0
+prompt_toolkit>=3.0
+pytest>=8.0

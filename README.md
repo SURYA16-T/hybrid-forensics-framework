@@ -230,6 +230,30 @@ The framework features a strict **Live RAM Risk Score (RS)** engine that calcula
 
 After performing a live scan (`python -m src.main --scan-live`), the engine will automatically print an **Incident Response Triage Report** to the terminal, detailing the triggered heuristics, the mathematical breakdown `RS = min( ∑ (Wi × Ci), 100 )`, the final risk tier (Low, Medium, High, Critical), and immediate analyst recommendations.
 
+**Example Terminal Output:**
+```text
+============================================================
+            LIVE RAM RISK SCORE TRIAGE REPORT            
+============================================================
+FINAL RISK SCORE: 100 / 100
+RISK TIER       : 🔴 CRITICAL
+IMMEDIATE ACTION: Rootkit/Takeover verified. Execute full Incident Response playbook.
+
+1. TRIGGERED HEURISTICS:
+  [CRIT_02] Unbacked Executable Memory (malfind PAGE_EXECUTE_READWRITE) (Count: 3)
+         Evidence: Memory Tag 255              150000000-157dc0000    [125.8M   464K   464K   272K] rwx/rwx SM=ZER
+  [HIGH_01] Suspicious Parent-Child Relationship (Count: 1)
+         Evidence: Process tree shows lsass.exe spawned directly by suspicious powershell.exe
+
+2. MATHEMATICAL BREAKDOWN:
+  Calculation: (45 pts * 3) + (25 pts * 1) = 160 points.
+  Result: min(160, 100) -> Final Score: 100
+
+3. ANALYSTS RECOMMENDATIONS:
+  Isolate the host at the network layer to prevent lateral movement. Export a full physical memory dump (.raw/.dmp) for deep Volatility/YARA analysis and begin looking for persistent registry/scheduled task hooks.
+============================================================
+```
+
 *Scores are triage heuristics, **not definitive proof of malware**.*
 
 ## macOS limitation to state in a presentation

@@ -7,12 +7,19 @@ class ThreatScorer:
     def score_event(self, event) -> int:
         score = int(event.risk_score or 0)
         text = f"{event.description} {event.details}".lower()
+        norm_text = text.replace("\\", "/")
+
         for name, points in SUSPICIOUS_NAMES.items():
-            if name in text:
+            name_lower = name.lower()
+            stem = name_lower[:-4] if name_lower.endswith(".exe") else name_lower
+            if name_lower in text or (stem and stem in norm_text):
                 score = max(score, points)
+
         for part, points in SUSPICIOUS_PATH_PARTS.items():
-            if part in text.replace("\\", "/"):
+            norm_part = part.replace("\\", "/").lower()
+            if norm_part in norm_text:
                 score += points
+
         return min(100, score)
 
     def evaluate_timeline(self, timeline):

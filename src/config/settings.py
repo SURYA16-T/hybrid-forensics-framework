@@ -22,17 +22,18 @@ SUSPICIOUS_NAMES = {
 }
 
 SUSPICIOUS_PATH_PARTS = {
-    "\\temp\\": 20,
+    "/temp/": 20,
     "/tmp/": 20,
-    "\\downloads\\": 40,
     "/downloads/": 40,
-    "\\appdata\\local\\temp\\": 35,
+    "/appdata/local/temp/": 35,
     "/.cache/": 20,
 }
 
 JIT_WHITELIST = {
     "chrome.exe", "msedge.exe", "brave.exe", "firefox.exe",
-    "node.exe", "code.exe", "electron.exe"
+    "node.exe", "code.exe", "electron.exe",
+    "chrome", "google chrome", "msedge", "brave", "firefox",
+    "node", "code", "electron", "code helper", "safari",
 }
 
 MEMORY_RULES = {

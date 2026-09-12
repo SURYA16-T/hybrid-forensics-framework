@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from src.capture import LinuxLiveAnalyzer, MacOSLiveAnalyzer, NativeLiveRAMAnalyzer, capture_live_snapshot
-from src.correlation import TimelineBuilder, ThreatScorer
+from src.correlation import TimelineBuilder, ThreatScorer, calculate_ram_risk_score
 from src.disk import ArtifactExtractor
 from src.intake import EvidenceIntake
 from src.memory import ProcessScanner
@@ -58,15 +58,19 @@ def live_scan() -> None:
         }, indent=2))
         return
 
-    payload = [item.to_dict() for item in findings]
-    print(json.dumps({
+    from dataclasses import asdict
+    payload = [item.to_dict() if hasattr(item, "to_dict") else asdict(item) for item in findings]
+    telemetry = {
+        "endpoint_id": platform.node(),
         "platform": system,
         "mode": "live_virtual_memory_triage",
         "findings": payload,
         "count": len(payload),
         "note": "Heuristic triage only; protected processes may be inaccessible and this command does not acquire physical RAM on Linux/macOS."
-    }, indent=2))
-
+    }
+    print(json.dumps(telemetry, indent=2))
+    print("\n")
+    calculate_ram_risk_score(telemetry)
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Hybrid Memory & Disk Forensics Framework")
@@ -124,9 +128,11 @@ def main() -> None:
                 continue
             if line.startswith("/analyze "):
                 file_path = line[len("/analyze "):].strip().strip('"')
-                kind = "memory" if Path(file_path).suffix.lower() in {".raw", ".dmp", ".vmem", ".sav", ".mem"} else "disk"
+                p = Path(file_path)
+                kind = "memory" if p.suffix.lower() in {".raw", ".dmp", ".vmem", ".sav", ".mem"} else "disk"
+                disk_root = args.disk_root or (str(p) if p.is_dir() else None)
                 try:
-                    print(run_offline(file_path, kind, None, args.volatility, args.output))
+                    print(run_offline(file_path, kind, disk_root, args.volatility, args.output))
                 except Exception as exc:
                     print(f"ERROR: {exc}")
                 continue

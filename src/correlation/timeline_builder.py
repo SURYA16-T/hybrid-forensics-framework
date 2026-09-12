@@ -38,20 +38,36 @@ class TimelineBuilder:
 
     def ingest_memory_findings(self, findings) -> None:
         for finding in findings:
+            pid = getattr(finding, "pid", 0)
+            pname = getattr(finding, "process_name", "unknown")
+            rule = getattr(finding, "rule", "UNKNOWN_RULE")
+            score = int(getattr(finding, "risk_score", 0))
+            details = {"pid": pid, "process_name": pname, "rule": rule}
+
+            if hasattr(finding, "base_address"):
+                details["base_address"] = finding.base_address
+            if hasattr(finding, "region"):
+                details["region"] = finding.region
+            if hasattr(finding, "region_size"):
+                details["region_size"] = finding.region_size
+            if hasattr(finding, "size_bytes"):
+                details["size_bytes"] = finding.size_bytes
+            if hasattr(finding, "protection"):
+                details["protection"] = finding.protection
+            if hasattr(finding, "permissions"):
+                details["permissions"] = finding.permissions
+
+            inner_details = getattr(finding, "details", {})
+            if isinstance(inner_details, dict):
+                details.update(inner_details)
+
             self.events.append(CorrelatedEvent(
                 timestamp=datetime.now(timezone.utc).isoformat(),
                 source_module="memory",
                 event_type="MemoryFinding",
-                description=f"{finding.rule} in {finding.process_name} (PID {finding.pid})",
-                risk_score=int(finding.risk_score),
-                details={
-                    "pid": finding.pid,
-                    "process_name": finding.process_name,
-                    "base_address": finding.base_address,
-                    "region_size": finding.region_size,
-                    "protection": finding.protection,
-                    **finding.details,
-                },
+                description=f"{rule} in {pname} (PID {pid})",
+                risk_score=score,
+                details=details,
             ))
 
     def build_timeline(self) -> list[CorrelatedEvent]:

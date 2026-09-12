@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import concurrent.futures
+import os
 import platform
 import re
 import shutil
@@ -74,23 +76,35 @@ class MacOSLiveAnalyzer:
 
     @staticmethod
     def _permission_flags(header: str) -> str:
-        match = re.search(r"\b([r-][w-][x-])(?:/[r-][w-][x-])?\b", header)
-        return match.group(1) if match else ""
+        match = re.search(r"(?:^|\s)([r-][w-][x-])/([r-][w-][x-])(?:\s|$)", header)
+        if match:
+            return match.group(1)
+        fallback = re.search(r"\b([r-][w-][x-])\b", header)
+        return fallback.group(1) if fallback else ""
 
     @staticmethod
     def _size_bytes(text: str) -> int:
-        match = re.search(r"\b([0-9]+(?:\.[0-9]+)?)\s*([KMGTP]?B)\b", text.upper())
+        match = re.search(r"\[\s*([0-9]+(?:\.[0-9]+)?)\s*([KMGTP]?B?)\b", text.upper())
         if not match:
-            return 0
+            match = re.search(r"\b([0-9]+(?:\.[0-9]+)?)\s*([KMGTP]?B?)\b", text.upper())
+            if not match:
+                return 0
         value = float(match.group(1))
         unit = match.group(2)
-        multipliers = {"B": 1, "KB": 1024, "MB": 1024**2, "GB": 1024**3, "TB": 1024**4, "PB": 1024**5}
-        return int(value * multipliers[unit])
+        multipliers = {
+            "": 1, "B": 1,
+            "K": 1024, "KB": 1024,
+            "M": 1024**2, "MB": 1024**2,
+            "G": 1024**3, "GB": 1024**3,
+            "T": 1024**4, "TB": 1024**4,
+            "P": 1024**5, "PB": 1024**5,
+        }
+        return int(value * multipliers.get(unit, 1))
 
     def inspect_process(self, pid: int, process_name: str) -> list[MacOSMemoryFinding]:
         try:
             result = subprocess.run(
-                ["vmmap", str(pid)], capture_output=True, text=True, timeout=10
+                ["vmmap", str(pid)], capture_output=True, text=True, timeout=3
             )
             if result.returncode != 0:
                 return []
@@ -101,25 +115,27 @@ class MacOSLiveAnalyzer:
         for line in result.stdout.splitlines():
             lower = line.lower()
             perms = self._permission_flags(line)
-            if not perms:
+            if not perms or perms == "---":
                 continue
             size = self._size_bytes(line)
             rule = None
             risk = 0
 
-            # macOS VM permissions are represented as r/w/x flags by vmmap.
-            if "rwx" in perms:
+            # Current VM permissions: rwx or r-x
+            if perms == "rwx":
                 rule = "RWX_EXECUTABLE_MEMORY"
-                risk = MAC_MEMORY_RULES[rule]
-            elif perms == "r-x" and size >= 1024 * 1024:
-                rule = "LARGE_EXECUTABLE_REGION"
-                risk = MAC_MEMORY_RULES[rule]
-            elif perms == "rwx" and size >= 256 * 1024:
+                risk = MAC_MEMORY_RULES.get(rule, 85)
+            elif "x" in perms and "w" in perms:
                 rule = "RWX_REGION"
-                risk = MAC_MEMORY_RULES[rule]
+                risk = MAC_MEMORY_RULES.get(rule, 75)
+            elif perms == "r-x" and size >= 1024 * 1024 and "__text" not in lower:
+                rule = "LARGE_EXECUTABLE_REGION"
+                risk = MAC_MEMORY_RULES.get(rule, 55)
 
             if rule:
-                whitelisted = process_name.lower() in JIT_WHITELIST
+                pname = process_name.lower()
+                stem = pname.split()[0] if " " in pname else pname
+                whitelisted = (pname in JIT_WHITELIST) or (stem in JIT_WHITELIST)
                 if whitelisted:
                     risk = max(10, risk - 30)
                 findings.append(MacOSMemoryFinding(
@@ -136,6 +152,28 @@ class MacOSLiveAnalyzer:
 
     def scan(self) -> list[MacOSMemoryFinding]:
         findings: list[MacOSMemoryFinding] = []
-        for proc in self.list_processes():
-            findings.extend(self.inspect_process(int(proc["pid"]), str(proc["process_name"])))
+        processes = self.list_processes()
+
+        if hasattr(os, "geteuid") and os.geteuid() != 0:
+            current_uid = str(os.getuid())
+            try:
+                res = subprocess.run(["ps", "-axo", "pid=,uid="], capture_output=True, text=True, timeout=5)
+                user_pids = {
+                    int(p.split()[0]) for p in res.stdout.splitlines()
+                    if len(p.split()) >= 2 and p.split()[1] == current_uid
+                }
+                processes = [p for p in processes if p["pid"] in user_pids]
+            except Exception:
+                pass
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=16) as executor:
+            future_to_pid = {
+                executor.submit(self.inspect_process, int(p["pid"]), str(p["process_name"])): p
+                for p in processes
+            }
+            for future in concurrent.futures.as_completed(future_to_pid):
+                try:
+                    findings.extend(future.result())
+                except Exception:
+                    continue
         return findings

@@ -29,8 +29,25 @@ class ProcessScanner:
         return processes
 
     def list_live_processes(self) -> list[MemoryProcess]:
-        if platform.system() == "Windows":
+        system = platform.system()
+        if system == "Windows":
             raise RuntimeError("Use NativeLiveRAMAnalyzer on Windows for live process/memory inspection.")
+        if system == "Darwin":
+            from src.capture.macos_live import MacOSLiveAnalyzer
+            try:
+                raw = MacOSLiveAnalyzer().list_processes()
+                return [
+                    MemoryProcess(
+                        pid=int(p["pid"]),
+                        ppid=int(p["ppid"]),
+                        process_name=str(p["process_name"]),
+                        path=str(p.get("path", "")),
+                    )
+                    for p in raw
+                ]
+            except Exception:
+                return []
+
         results: list[MemoryProcess] = []
         proc_root = Path("/proc")
         if proc_root.exists():

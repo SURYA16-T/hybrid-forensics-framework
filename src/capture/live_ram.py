@@ -23,11 +23,17 @@ class LiveRAMCapturer:
         self.kernel32.OpenProcess.restype = wintypes.HANDLE
         self.kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
         self.kernel32.CloseHandle.restype = wintypes.BOOL
+        self.kernel32.CreateFileW.argtypes = [
+            wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+            wintypes.LPVOID, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE
+        ]
+        self.kernel32.CreateFileW.restype = wintypes.HANDLE
         self.dbghelp.MiniDumpWriteDump.argtypes = [
             wintypes.HANDLE, wintypes.DWORD, wintypes.HANDLE,
             wintypes.DWORD, wintypes.LPVOID, wintypes.LPVOID, wintypes.LPVOID
         ]
         self.dbghelp.MiniDumpWriteDump.restype = wintypes.BOOL
+        self.INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
 
     def dump_process(self, pid: int, output_path: str) -> str:
         out = Path(output_path).expanduser().resolve()
@@ -44,7 +50,7 @@ class LiveRAMCapturer:
             file_handle = kernel32.CreateFileW(
                 str(out), GENERIC_WRITE, 0, None, CREATE_ALWAYS, 0, None
             )
-            if file_handle == wintypes.HANDLE(-1).value:
+            if not file_handle or file_handle == self.INVALID_HANDLE_VALUE:
                 raise ctypes.WinError(ctypes.get_last_error())
             try:
                 ok = self.dbghelp.MiniDumpWriteDump(

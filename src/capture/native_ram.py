@@ -4,7 +4,7 @@ import ctypes
 import ctypes.wintypes as wintypes
 import os
 import platform
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from typing import Any
 
 from src.config.settings import JIT_WHITELIST, MEMORY_RULES
@@ -21,6 +21,9 @@ class MemoryFinding:
     rule: str
     risk_score: int
     details: dict[str, Any]
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 class NativeLiveRAMAnalyzer:

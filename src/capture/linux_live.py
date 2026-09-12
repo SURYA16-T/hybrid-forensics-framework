@@ -90,15 +90,20 @@ class LinuxLiveAnalyzer:
             size = max(0, end - start)
             rule = None
             risk = 0
+            mapping = parts[5] if len(parts) > 5 else ""
+            is_anonymous = (len(parts) <= 5) or mapping.startswith("[anon") or "(deleted)" in mapping
+
             if perms.startswith("rwx"):
                 rule = "RWX_EXECUTABLE_MEMORY"
                 risk = LINUX_MEMORY_RULES[rule]
-            elif perms.startswith("r-x") and size >= 1024 * 1024 and parts[5:] and "[heap]" not in parts[5]:
+            elif perms.startswith("r-x") and size >= 1024 * 1024 and (is_anonymous or "[heap]" in mapping or "[stack]" in mapping):
                 rule = "LARGE_EXECUTABLE_REGION"
                 risk = LINUX_MEMORY_RULES[rule]
 
             if rule:
-                whitelisted = process_name.lower() in JIT_WHITELIST
+                pname = process_name.lower()
+                stem = pname.split()[0] if " " in pname else pname
+                whitelisted = (pname in JIT_WHITELIST) or (stem in JIT_WHITELIST)
                 if whitelisted:
                     risk = max(10, risk - 30)
                 findings.append(LinuxMemoryFinding(
@@ -109,7 +114,7 @@ class LinuxLiveAnalyzer:
                     size_bytes=size,
                     rule=rule,
                     risk_score=min(100, risk),
-                    details={"mapping": parts[5] if len(parts) > 5 else "", "jit_whitelisted": whitelisted},
+                    details={"mapping": mapping, "jit_whitelisted": whitelisted},
                 ))
         return findings
 

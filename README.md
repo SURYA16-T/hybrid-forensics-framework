@@ -231,6 +231,7 @@ The framework features a strict **Live RAM Risk Score (RS)** engine that calcula
 After performing a live scan (`python -m src.main --scan-live`), the engine will automatically print an **Incident Response Triage Report** to the terminal, detailing the triggered heuristics, the mathematical breakdown `RS = min( ∑ (Wi × Ci), 100 )`, the final risk tier (Low, Medium, High, Critical), and immediate analyst recommendations.
 
 **Example Terminal Output:**
+
 ```text
 ============================================================
             LIVE RAM RISK SCORE TRIAGE REPORT            

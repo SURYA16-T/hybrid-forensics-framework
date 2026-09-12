@@ -54,55 +54,143 @@ Evidence
    `--> JSON + HTML report
 ```
 
-## Setup
+## Setup & Usage
 
-### Linux/macOS
+### macOS (Terminal)
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/SURYA16-T/hybrid-forensics-framework.git
+cd hybrid-forensics-framework
+
+# 2. Create and activate virtual environment
 python3 -m venv venv
 source venv/bin/activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
-pytest -q
+
+# 4. Run tests
+python -m pytest -q tests/
+
+# 5. Run the live process/virtual-memory scanner
+python -m src.main --scan-live
+
+# 6. Save a live triage snapshot to a JSON file
+python -m src.main --capture-live output/macos_snapshot.json
+
+# 7. Offline memory analysis (requires Volatility 3 installed as 'vol')
+python -m src.main --image /path/to/memdump.raw --type memory
+
+# 8. Disk artifact analysis (on a mounted or extracted filesystem)
+python -m src.main --image /path/to/evidence.img --type disk --disk-root /mnt/evidence
+
+# 9. Hybrid analysis (memory + disk combined)
+python -m src.main --image /path/to/memdump.raw --type hybrid --disk-root /mnt/evidence
+
+# 10. Launch the interactive forensics REPL
+python -m src.main
+# Available REPL commands:
+#   /scan                         Live platform memory heuristic scan
+#   /capture-live <file>          Save live triage snapshot JSON
+#   /analyze <file>               Analyze memory/disk evidence
+#   /help                         Show available commands
+#   /exit                         Quit
+
+# Or use the convenience script (does steps 2–5 automatically):
+chmod +x run_macos.sh
+./run_macos.sh
 ```
 
-Run the live platform scanner:
+### Linux (Terminal)
 
 ```bash
-chmod +x run_macos.sh
-./run_macos.sh       # macOS
-python -m src.main --scan-live   # Linux or macOS
+# 1. Clone the repository
+git clone https://github.com/SURYA16-T/hybrid-forensics-framework.git
+cd hybrid-forensics-framework
+
+# 2. Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Run tests
+python -m pytest -q tests/
+
+# 5. Run the live process/virtual-memory scanner
+python -m src.main --scan-live
+
+# 6. Save a live triage snapshot to a JSON file
+python -m src.main --capture-live output/linux_snapshot.json
+
+# 7. Offline memory analysis (requires Volatility 3 installed as 'vol')
+python -m src.main --image /path/to/memdump.raw --type memory
+
+# 8. Disk artifact analysis (on a mounted or extracted filesystem)
+python -m src.main --image /path/to/evidence.img --type disk --disk-root /mnt/evidence
+
+# 9. Hybrid analysis (memory + disk combined)
+python -m src.main --image /path/to/memdump.raw --type hybrid --disk-root /mnt/evidence
+
+# 10. Launch the interactive forensics REPL
+python -m src.main
+# Available REPL commands:
+#   /scan                         Live platform memory heuristic scan
+#   /capture-live <file>          Save live triage snapshot JSON
+#   /analyze <file>               Analyze memory/disk evidence
+#   /help                         Show available commands
+#   /exit                         Quit
+
+# Or use the convenience script (does steps 2–5 automatically):
+chmod +x run_linux.sh
+./run_linux.sh
 ```
 
-### Windows PowerShell (Administrator recommended for live scanning)
+### Windows (PowerShell — Administrator recommended for live scanning)
 
 ```powershell
+# 1. Clone the repository
+git clone https://github.com/SURYA16-T/hybrid-forensics-framework.git
+cd hybrid-forensics-framework
+
+# 2. Create and activate virtual environment
 py -m venv venv
 .\venv\Scripts\Activate.ps1
+
+# 3. Install dependencies
 pip install -r requirements.txt
-pytest -q
+
+# 4. Run tests
+python -m pytest -q tests\
+
+# 5. Run the live process/virtual-memory scanner (Administrator recommended)
 python -m src.main --scan-live
-```
 
-## Offline memory analysis
+# 6. Save a live triage snapshot to a JSON file
+python -m src.main --capture-live output\windows_snapshot.json
 
-Install Volatility 3 locally and make its launcher available as `vol` (or pass `--volatility`):
+# 7. Offline memory analysis (requires Volatility 3 installed as 'vol')
+python -m src.main --image C:\path\to\memdump.raw --type memory
 
-```bash
-python -m src.main --image /path/to/memdump.raw --type memory
-```
+# 8. Disk artifact analysis (on a mounted or extracted filesystem)
+python -m src.main --image C:\path\to\evidence.img --type disk --disk-root C:\mnt\evidence
 
-## Disk analysis
+# 9. Hybrid analysis (memory + disk combined)
+python -m src.main --image C:\path\to\memdump.raw --type hybrid --disk-root C:\mnt\evidence
 
-The disk parser operates on a mounted or already extracted filesystem tree:
+# 10. Launch the interactive forensics REPL
+python -m src.main
+# Available REPL commands:
+#   /scan                         Live platform memory heuristic scan
+#   /capture-live <file>          Save live triage snapshot JSON
+#   /analyze <file>               Analyze memory/disk evidence
+#   /help                         Show available commands
+#   /exit                         Quit
 
-```bash
-python -m src.main --image /path/to/evidence.img --type disk --disk-root /mnt/evidence
-```
-
-## Hybrid analysis
-
-```bash
-python -m src.main --image /path/to/memdump.raw --type hybrid --disk-root /mnt/evidence
+# Or use the convenience script (does steps 2–5 automatically):
+.\run_windows.ps1
 ```
 
 ## Current artifact coverage

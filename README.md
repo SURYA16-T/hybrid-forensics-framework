@@ -203,18 +203,30 @@ python -m src.main
 
 Disk artifacts and memory observations are normalized into one `CorrelatedEvent` model and sorted chronologically. The current implementation is deliberately transparent: it does not claim advanced PID/path/hash/time-window entity matching.
 
-## Threat heuristics
+## Threat Heuristics & Live RAM Risk Engine
 
-Windows checks include:
+The framework features a strict **Live RAM Risk Score (RS)** engine that calculates risk based on a weighted heuristic matrix. For every memory dump or live RAM scan, it evaluates the telemetry against the following specific deductions:
 
-- `PAGE_EXECUTE_READWRITE`
-- `PAGE_EXECUTE_WRITECOPY`
-- guarded executable regions
-- large private executable regions
+### 🚨 Critical Risk Indicators (45 Points Each)
+- `CRIT_01`: Hidden Processes (`psxview` mismatches / unlinked `ActiveProcessLinks`).
+- `CRIT_02`: Unbacked Executable Memory (`malfind` hits with `PAGE_EXECUTE_READWRITE` or `RWX_EXECUTABLE_MEMORY`).
+- `CRIT_03`: Process Hollowing / Replacement (e.g., `svchost.exe` running out of a non-standard path).
+- `CRIT_04`: Kernel Callback Table modifications or unauthorized driver hooks.
 
-Linux/macOS checks include suspicious executable/RWX virtual-memory regions. The threat scorer also considers suspicious executable names and path indicators.
+### ⚠️ High Risk Indicators (25 Points Each)
+- `HIGH_01`: Suspicious Parent-Child relationships (e.g., `lsass.exe` spawned by `cmd.exe`).
+- `HIGH_02`: Inline API Hooking or User/Kernel SSDT modifications (e.g., `CREATEFILE_W_HOOK`).
+- `HIGH_03`: Orphaned Threads (running code without a parent process or valid DLL backing).
 
-Scores are triage heuristics, **not proof of malware**.
+### 🔍 Medium/Low Risk Indicators (10 Points Each)
+- `MED_01`: System binaries communicating with external/foreign IP addresses (`netscan`).
+- `MED_02`: Sudden privilege escalation to `SYSTEM` by non-system apps.
+- `MED_03`: Cleared history buffers (`cmdscan` / `consoles` tampering).
+
+### Triage Output & Automation
+After performing a live scan (`python -m src.main --scan-live`), the engine will automatically print an **Incident Response Triage Report** to the terminal, detailing the triggered heuristics, the mathematical breakdown `RS = min( ∑ (Wi × Ci), 100 )`, the final risk tier (Low, Medium, High, Critical), and immediate analyst recommendations.
+
+*Scores are triage heuristics, **not definitive proof of malware**.*
 
 ## macOS limitation to state in a presentation
 

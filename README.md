@@ -208,22 +208,26 @@ Disk artifacts and memory observations are normalized into one `CorrelatedEvent`
 The framework features a strict **Live RAM Risk Score (RS)** engine that calculates risk based on a weighted heuristic matrix. For every memory dump or live RAM scan, it evaluates the telemetry against the following specific deductions:
 
 ### 🚨 Critical Risk Indicators (45 Points Each)
+
 - `CRIT_01`: Hidden Processes (`psxview` mismatches / unlinked `ActiveProcessLinks`).
 - `CRIT_02`: Unbacked Executable Memory (`malfind` hits with `PAGE_EXECUTE_READWRITE` or `RWX_EXECUTABLE_MEMORY`).
 - `CRIT_03`: Process Hollowing / Replacement (e.g., `svchost.exe` running out of a non-standard path).
 - `CRIT_04`: Kernel Callback Table modifications or unauthorized driver hooks.
 
 ### ⚠️ High Risk Indicators (25 Points Each)
+
 - `HIGH_01`: Suspicious Parent-Child relationships (e.g., `lsass.exe` spawned by `cmd.exe`).
 - `HIGH_02`: Inline API Hooking or User/Kernel SSDT modifications (e.g., `CREATEFILE_W_HOOK`).
 - `HIGH_03`: Orphaned Threads (running code without a parent process or valid DLL backing).
 
 ### 🔍 Medium/Low Risk Indicators (10 Points Each)
+
 - `MED_01`: System binaries communicating with external/foreign IP addresses (`netscan`).
 - `MED_02`: Sudden privilege escalation to `SYSTEM` by non-system apps.
 - `MED_03`: Cleared history buffers (`cmdscan` / `consoles` tampering).
 
 ### Triage Output & Automation
+
 After performing a live scan (`python -m src.main --scan-live`), the engine will automatically print an **Incident Response Triage Report** to the terminal, detailing the triggered heuristics, the mathematical breakdown `RS = min( ∑ (Wi × Ci), 100 )`, the final risk tier (Low, Medium, High, Critical), and immediate analyst recommendations.
 
 *Scores are triage heuristics, **not definitive proof of malware**.*

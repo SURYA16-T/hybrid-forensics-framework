@@ -6,7 +6,7 @@ Live analysis uses Python `ctypes` to call Win32 process and virtual-memory APIs
 
 ## macOS
 
-Live analysis uses built-in `ps` for process enumeration and `vmmap` for virtual-memory-region inspection. These are appropriate for host-side triage and do not constitute full physical-RAM acquisition. macOS security controls can restrict access to protected processes. Apple documents Mach virtual-memory APIs, but using those directly from a portable Python project would require a substantially different native extension and still would not make physical-RAM acquisition equivalent to a traditional forensic RAM image. citeturn739850search7
+Live analysis uses built-in `ps` for process enumeration and `vmmap` for virtual-memory-region inspection. These are appropriate for host-side triage and do not constitute full physical-RAM acquisition. macOS security controls can restrict access to protected processes. Apple documents Mach virtual-memory APIs, but using those directly from a portable Python project would require a substantially different native extension and still would not make physical-RAM acquisition equivalent to a traditional forensic RAM image.
 
 ## Linux
 

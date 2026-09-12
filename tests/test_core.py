@@ -149,3 +149,31 @@ def test_jit_whitelist_coverage():
     assert "node" in JIT_WHITELIST
     assert "chrome.exe" in JIT_WHITELIST
     assert "chrome" in JIT_WHITELIST
+
+
+def test_calculate_ram_risk_score(capsys):
+    from src.correlation import calculate_ram_risk_score
+
+    # Test empty telemetry
+    calculate_ram_risk_score({})
+    out_empty = capsys.readouterr().out
+    assert "FINAL RISK SCORE: 0 / 100" in out_empty
+    assert "RISK TIER       : 🟢 LOW" in out_empty
+
+    # Test single high risk indicator
+    calculate_ram_risk_score({"findings": [{"rule_id": "HIGH_01", "count": 1}]})
+    out_high = capsys.readouterr().out
+    assert "FINAL RISK SCORE: 25 / 100" in out_high
+    assert "RISK TIER       : 🟡 MEDIUM" in out_high
+
+    # Test critical indicator with cap at 100 and native rule mapping
+    calculate_ram_risk_score({
+        "findings": [
+            {"rule": "RWX_EXECUTABLE_MEMORY", "count": 3},
+            {"rule_id": "CRIT_01", "count": 1}
+        ]
+    })
+    out_crit = capsys.readouterr().out
+    assert "FINAL RISK SCORE: 100 / 100" in out_crit
+    assert "RISK TIER       : 🔴 CRITICAL" in out_crit
+    assert "min(180, 100) -> Final Score: 100" in out_crit
